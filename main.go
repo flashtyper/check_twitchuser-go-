@@ -26,11 +26,11 @@ func main() {
 
         if len(parsedData.Data) > 0 {
                 //User ONLINE - CRITICAL
-                fmt.Printf("CRITICAL - %s ist live!\n\nTitel: %s \nGame: %s | viewer=%d \n", parsedData.Data[0].UserName, parsedData.Data[0].Title, parsedData.Data[0].GameName, parsedData.Data[0].ViewerCount)
+                fmt.Printf("CRITICAL - %s is live!\n\nTitle: %s \nGame: %s | viewer=%d \n", parsedData.Data[0].UserName, parsedData.Data[0].Title, parsedData.Data[0].GameName, parsedData.Data[0].ViewerCount)
                 os.Exit(2)
         } else {
                 //User OFFLINE - OK
-        fmt.Printf("OK - %s ist offline. | viewer=0\n", *user)
+        fmt.Printf("OK - %s is offline. | viewer=0\n", *user)
                 os.Exit(0)
         }
 }
