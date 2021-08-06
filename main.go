@@ -4,92 +4,62 @@ import (
         "fmt"
         "io/ioutil"
         "net/http"
-        "regexp"
+        "os"
         "encoding/json"
         "flag"
-        "os"
+        "strings"
 )
 
 func main() {
-
-        stationID := flag.String("s", "", "Station ID - see https://www.dwd.de/DE/leistungen/opendata/help/warnungen/cap_warncellids_csv.csv")
+        user := flag.String("u", "", "Twitch Username")
+        clientid := flag.String("c", "", "Twitch API Client ID")
+        bearerfile := flag.String("b", "", "Twitch API Bearer Token")
         flag.Parse()
 
-        if *stationID == "" {
-                ExitUnknown("No station id given")
+        arr_token, err := ioutil.ReadFile(*bearerfile)
+        if err != nil {
+                fmt.Print(err.Error())
         }
-        if len(*stationID) != 9 {
-                ExitUnknown("Given station ID doesn't exist!")
-        }
+        str_token := "Bearer " + string(arr_token)
+        REST := rest(*user, *clientid, str_token)
+        parsedData := parse(REST)
 
-        // Perform http request and convert byte array to string
-        http_response := string(http_request())
-
-        // Convert JSONP to JSON
-        re := regexp.MustCompile(`warnWetter.loadWarnings\(`)
-        s := re.ReplaceAllString(http_response, "")
-        s = s[:len(s)-2]
-
-        // Declared an empty map interface
-        var main_hash map[string]interface{}
-
-        // Unmarshal or Decode the JSON to the interface.
-        json.Unmarshal([]byte(s), &main_hash)
-
-        // check if a warning for stationID is available
-        if _, ok := main_hash["warnings"].(map[string]interface{})[*stationID]; ok {
-
-                level := fmt.Sprintf("%v", main_hash["warnings"].(map[string]interface{})[*stationID].([]interface{})[0].(map[string]interface{})["level"])
-
-                if (level == "3" || level == "2") {
-                        headline := fmt.Sprintf("%v", main_hash["warnings"].(map[string]interface{})[*stationID].([]interface{})[0].(map[string]interface{})["headline"])
-                        description := fmt.Sprintf("%v", main_hash["warnings"].(map[string]interface{})[*stationID].([]interface{})[0].(map[string]interface{})["description"])
-                        ExitWarning(headline, description)
-                } else if (level == "4") {
-                        headline := fmt.Sprintf("%v", main_hash["warnings"].(map[string]interface{})[*stationID].([]interface{})[0].(map[string]interface{})["headline"])
-                        description := fmt.Sprintf("%v", main_hash["warnings"].(map[string]interface{})[*stationID].([]interface{})[0].(map[string]interface{})["description"])
-                        ExitCritical(headline, description)
-                } else {
-                        ExitUnknown("Couldn't determine warning level!")
-                }
+        if len(parsedData.Data) > 0 {
+                //User ONLINE - CRITICAL
+                fmt.Printf("CRITICAL - %s ist live!\n\nTitel: %s \nGame: %s | viewer=%d \n", parsedData.Data[0].UserName, parsedData.Data[0].Title, parsedData.Data[0].GameName, parsedData.Data[0].ViewerCount)
+                os.Exit(2)
         } else {
-                ExitOK()
+                //User OFFLINE - OK
+        fmt.Printf("OK - %s ist offline. | viewer=0\n", *user)
+                os.Exit(0)
         }
 }
-func http_request() (arr_resp []byte){
-        client := &http.Client{
-                CheckRedirect: func(req *http.Request, via []*http.Request) error {
-                return http.ErrUseLastResponse
-                },
-        }
-        resp, err := client.Get("https://www.dwd.de/DWD/warnungen/warnapp/json/warnings.json")
-        if (err != nil) {
-                ExitUnknown(err.Error())
-        }
-        if (resp.StatusCode != 200) {
-                comb := fmt.Sprint(resp.StatusCode)
-                ExitUnknown(comb)
+
+func rest(user string, clientid string, str_token string) (arr_resp []byte){
+        client := &http.Client{}
+        req, err := http.NewRequest("GET", "https://api.twitch.tv/helix/streams?user_login=" + user, nil)
+        req.Header.Add("client-id", clientid)
+        req.Header.Add("Authorization", str_token)
+        resp, err := client.Do(req)
+        if err != nil {
+                fmt.Print(err.Error())
+                os.Exit(3)
         }
         arr_resp, err = ioutil.ReadAll(resp.Body)
-        if (err != nil) {
-                ExitUnknown(err.Error())
+        if err != nil {
+                fmt.Print(err.Error())
+                os.Exit(3)
+        }
+        if (resp.StatusCode != 200) {
+                s := string(arr_resp)
+                e := strings.ReplaceAll(s, "\n", "")
+                fmt.Printf("UNKNOWN - %d %s\n", resp.StatusCode, e)
+                os.Exit(3)
         }
         return
 }
 
-func ExitUnknown (reason string) {
-        fmt.Printf("%s %s", "UNKNOWN -", reason)
-        os.Exit(3)
-}
-func ExitOK () {
-        fmt.Println("OK - No warnings found")
-        os.Exit(0)
-}
-func ExitCritical (headline string, description string) {
-        fmt.Printf("%s %s %s %s", "CRITICAL -", headline, "\n", description)
-        os.Exit(2)
-}
-func ExitWarning (headline string, description string) {
-        fmt.Printf("%s %s %s %s", "WARNING -", headline, "\n", description)
-        os.Exit(1)
+func parse(arr_resp []byte) (JD JSON) {
+        json.Unmarshal(arr_resp, &JD)
+        return
 }
