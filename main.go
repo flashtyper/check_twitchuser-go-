@@ -25,6 +25,9 @@ func main() {
         parsedData := parse(REST)
 
         if len(parsedData.Data) > 0 {
+                // gettin rid of pipe characters in stream titles... 
+                parsedData.Data[0].Title = strings.ReplaceAll(parsedData.Data[0].Title, "|", "/")
+                
                 //User ONLINE - CRITICAL
                 fmt.Printf("CRITICAL - %s ist live!\n\nTitel: %s \nGame: %s | viewer=%d \n", parsedData.Data[0].UserName, parsedData.Data[0].Title, parsedData.Data[0].GameName, parsedData.Data[0].ViewerCount)
                 os.Exit(2)
