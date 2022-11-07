@@ -14,6 +14,7 @@ func main() {
         user := flag.String("u", "", "Twitch Username")
         clientid := flag.String("c", "", "Twitch API Client ID")
         bearerfile := flag.String("b", "", "Twitch API Bearer Token")
+        game := flag.String("g", "", "Game substring")
         flag.Parse()
 
         arr_token, err := ioutil.ReadFile(*bearerfile)
@@ -25,15 +26,25 @@ func main() {
         parsedData := parse(REST)
 
         if len(parsedData.Data) > 0 {
-                // gettin rid of pipe characters in stream titles... 
                 parsedData.Data[0].Title = strings.ReplaceAll(parsedData.Data[0].Title, "|", "/")
-                
-                //User ONLINE - CRITICAL
-                fmt.Printf("CRITICAL - %s ist live!\n\nTitel: %s \nGame: %s | viewer=%d \n", parsedData.Data[0].UserName, parsedData.Data[0].Title, parsedData.Data[0].GameName, parsedData.Data[0].ViewerCount)
-                os.Exit(2)
+                if strings.Compare(*game, "none") != 0 {
+                        if strings.Contains(parsedData.Data[0].GameName, *game) {
+                                // User ONLINE with game filter and plays it
+                                fmt.Printf("CRITICAL - %s ist live!\n\nTitel: %s \nGame: %s | viewer=%d \n", parsedData.Data[0].UserName, parsedData.Data[0].Title, parsedData.Data[0].GameName, parsedData.Data[0].ViewerCount)
+                                os.Exit(2)
+                        } else {
+                                // User ONLINE with game filter but plays a different game (for viewer monitoring purpose)
+                                fmt.Printf("OK - %s ist live!\n\nTitel: %s \nGame: %s | viewer=%d \n", parsedData.Data[0].UserName, parsedData.Data[0].Title, parsedData.Data[0].GameName, parsedData.Data[0].ViewerCount)
+                                os.Exit(2)
+                        }
+                } else {
+                        // User ONLINE without filter
+                        fmt.Printf("CRITICAL - %s ist live!\n\nTitel: %s \nGame: %s | viewer=%d \n", parsedData.Data[0].UserName, parsedData.Data[0].Title, parsedData.Data[0].GameName, parsedData.Data[0].ViewerCount)
+                        os.Exit(2)
+                }
         } else {
-                //User OFFLINE - OK
-        fmt.Printf("OK - %s ist offline. | viewer=0\n", *user)
+                // User OFFLINE
+                fmt.Printf("OK - %s ist offline. | viewer=0\n", *user)
                 os.Exit(0)
         }
 }
