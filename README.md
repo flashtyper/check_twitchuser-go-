@@ -4,13 +4,13 @@ small golang script for icinga2 to check if a twitch user is live
 ## Usage: 
 
 ```bash
-./check_twitch-user -u <twitchuser> -c <Twitch API Client ID> -b <full path to bearer token>
+./check_twitch-user -u <twitchuser> -c <Twitch API Client ID> -b <full path to bearer token> -g <game name substring>
 ```
 
 ## Example:
 
 ```bash
-./check_twitch-user -u asmongold -c abcdefghijklmnopqrdtuvwqyz1234567890 -b /path/to/twitch/bearer/token
+./check_twitch-user -u asmongold -c abcdefghijklmnopqrdtuvwqyz1234567890 -b /path/to/twitch/bearer/token -g "Warfare"
 ```
 
 ## Installation:
@@ -23,6 +23,7 @@ object CheckCommand "check_twitchuser" {
     "-u" = "$twitch_user$"
     "-c" = "client-id"
     "-b" = "/path/to/twitch/bearer/token"
+    "-g" = "none"
   }
   vars.twitch_user = "$twitchuser$"
 }
