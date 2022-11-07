@@ -35,7 +35,7 @@ func main() {
                         } else {
                                 // User ONLINE with game filter but plays a different game (for viewer monitoring purpose)
                                 fmt.Printf("OK - %s ist live!\n\nTitel: %s \nGame: %s | viewer=%d \n", parsedData.Data[0].UserName, parsedData.Data[0].Title, parsedData.Data[0].GameName, parsedData.Data[0].ViewerCount)
-                                os.Exit(2)
+                                os.Exit(1)
                         }
                 } else {
                         // User ONLINE without filter
